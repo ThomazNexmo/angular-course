@@ -1,0 +1,12 @@
+mat-sidenav-container, mat-sidenav-content, mat-sidenav {
+  height: 100vh;
+}
+
+mat-sidenav {
+  width: 250px;
+}
+
+body {
+  min-height: 100vh !important;
+}
+
