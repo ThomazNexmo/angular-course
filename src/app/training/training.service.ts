@@ -1,4 +1,4 @@
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 
 import { Exercise } from './exercise.model';
 import { from } from 'rxjs';
@@ -10,22 +10,22 @@ import { map } from 'rxjs/operators';
 @Injectable()
 export class TrainingService {
 
-  constructor( private db: AngularFirestore ) {
-
-  }
-
   exerciseChanged = new Subject<Exercise>();
   exercisesChanged = new Subject<Exercise[]>();
   finishedExercisesChanged = new Subject<Exercise[]>();
-
 
   private avaliableExercises: Exercise[] = [];
   private runningExercise: Exercise;
   private exercises: Exercise[] = [];
   private finishedExercises: Exercise[] = []; // when this change I emmit the finishedExercisesChanged event
+  private fbSubs: Subscription[] = [];
+
+
+  constructor( private db: AngularFirestore ) {}
 
   fetchAvaliableExercises() {
-    this.db.collection('avaliableExercise')
+    console.log(this.fbSubs)
+    this.fbSubs.push(this.db.collection('avaliableExercise')
     .snapshotChanges()
     .pipe(map(docArray => {
       return docArray.map(doc => {
@@ -40,7 +40,7 @@ export class TrainingService {
     })).subscribe((exercises: Exercise[]) => {
       this.avaliableExercises = exercises;
       this.exercisesChanged.next([...this.avaliableExercises]);
-    });
+    }));
   }
 
   startExercise(selectedId: string) {
@@ -81,9 +81,13 @@ export class TrainingService {
   fetchCompletedOrCancelledExercises() {
     // this valueChanges only give us a array of document values without the ID of the document.
     // but we dont need the ID here
-    this.db.collection('finishedExercises').valueChanges().subscribe((exercises: Exercise[]) => {
+    this.fbSubs.push(this.db.collection('finishedExercises').valueChanges().subscribe((exercises: Exercise[]) => {
       this.finishedExercisesChanged.next(exercises);
-    });
+    }));
+  }
+
+  cancelSubscriptions() {
+    this.fbSubs.forEach(sub => sub.unsubscribe());
   }
 
   private addDataToDatabase(exercise: Exercise) {
