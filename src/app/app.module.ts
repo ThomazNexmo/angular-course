@@ -19,8 +19,9 @@ import { environment } from '../environments/environment';
 import { AngularFireAuthModule } from '@angular/fire/auth';
 import { UIService } from './shared/ui.service';
 import { AuthModule } from './auth/auth.module';
-import { TrainingModule } from './training/training.module';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
+import { StoreModule } from '@ngrx/store';
+import { appReducer } from './app.reducer';
 
 
 @NgModule({
@@ -43,6 +44,7 @@ import { AngularFirestoreModule } from '@angular/fire/firestore';
     AngularFireAuthModule, // imports firebase/auth, only needed for auth features,
     // AngularFireStorageModule, // imports firebase/storage only needed for storage features
     AuthModule,
+    StoreModule.forRoot({ui: appReducer}) // the store module has a function where I have to pass my the app reducer,
   ],
   providers: [AuthService, TrainingService, UIService],
   bootstrap: [AppComponent],

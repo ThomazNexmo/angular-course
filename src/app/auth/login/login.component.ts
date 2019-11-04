@@ -2,7 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 import { AuthService } from '../auth.service';
 import { UIService } from '../../shared/ui.service';
-import { Subscription } from 'rxjs';
+import { Subscription, Observable } from 'rxjs';
+import { Store } from '@ngrx/store';
+import { map } from 'rxjs/operators';
+import * as fromApp from '../../app.reducer';
 
 @Component({
   selector: 'app-login',
@@ -11,18 +14,21 @@ import { Subscription } from 'rxjs';
 })
 export class LoginComponent implements OnInit, OnDestroy {
   loginForm: FormGroup;
-  isLoading = false;
+  // its a patter use dolar sign in the end of variables controled for NgRx
+  isLoading$: Observable<boolean>; // observable is a generic type, we need put the type
   private loadingSubs: Subscription;
 
   constructor(
     private authService: AuthService,
-    private uiService: UIService
+    private uiService: UIService,
+    private store: Store<{ui: fromApp.State}>
     ) {}
 
   ngOnInit() {
-    this.loadingSubs = this.uiService.loadingStateChanged.subscribe(loading => {
-      this.isLoading = loading;
-    });
+    this.isLoading$ = this.store.pipe(map(state => state.ui.isLoading));
+    // this.loadingSubs = this.uiService.loadingStateChanged.subscribe(loading => {
+    //   this.isLoading = loading;
+    // });
     this.loginForm = new FormGroup({
       email: new FormControl('', {
         validators: [Validators.required, Validators.email]
@@ -39,8 +45,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.loadingSubs) {
-      this.loadingSubs.unsubscribe();
-    }
+    // if (this.loadingSubs) {
+    //   this.loadingSubs.unsubscribe();
+    // }
   }
 }

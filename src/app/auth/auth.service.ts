@@ -10,6 +10,8 @@ import { AngularFireAuth } from '@angular/fire/auth';
 import { TrainingService } from '../training/training.service';
 import { MatSnackBar } from '@angular/material';
 import { UIService } from '../shared/ui.service';
+import { Store } from '@ngrx/store';
+import * as fromApp from '../app.reducer';
 
 
 
@@ -27,7 +29,9 @@ export class AuthService { // alow fake login, inform reports about the login,
     private router: Router,
     private afAuth: AngularFireAuth,
     private trainingService: TrainingService,
-    private uiService: UIService
+    private uiService: UIService,
+    // inject the store
+    private store: Store<{ui: fromApp.State}> // store is a generic type and we can define how it will locks like
     ) {
   }
 
@@ -47,14 +51,18 @@ export class AuthService { // alow fake login, inform reports about the login,
   }
 
   registerUser(authdata: AuthData) { // should be call when the user signUp (register), recive the data type AuthData
-    this.uiService.loadingStateChanged.next(true);
+    // this.uiService.loadingStateChanged.next(true);
+    // actions are always an abject ho have a type
+    this.store.dispatch({ type: 'START_LOADING' });
     this.afAuth.auth.createUserWithEmailAndPassword(authdata.email, authdata.password)
     .then(result => {
       console.log(result);
-      this.uiService.loadingStateChanged.next(false);
+      // this.uiService.loadingStateChanged.next(false);
+      this.store.dispatch({ type: 'STOP_LOADING' });
     })
     .catch(error => {
-      this.uiService.loadingStateChanged.next(false);
+      // this.uiService.loadingStateChanged.next(false);
+      this.store.dispatch({ type: 'STOP_LOADING' });
       this.uiService.showSnackBar(error.message, null, 3000);
       // this.snackbar.open(error.message, null, {
       //   duration: 3000
@@ -64,14 +72,17 @@ export class AuthService { // alow fake login, inform reports about the login,
   }
 
   login(authdata: AuthData) {
-    this.uiService.loadingStateChanged.next(true);
+    // this.uiService.loadingStateChanged.next(true);
+    this.store.dispatch({ type: 'START_LOADING' });
     this.afAuth.auth.signInWithEmailAndPassword(authdata.email, authdata.password)
     .then(result => {
-      this.uiService.loadingStateChanged.next(false);
+      // this.uiService.loadingStateChanged.next(false);
+      this.store.dispatch({ type: 'STOP_LOADING' });
       console.log(result);
     })
     .catch(error => {
-      this.uiService.loadingStateChanged.next(false);
+      // this.uiService.loadingStateChanged.next(false);
+      this.store.dispatch({ type: 'STOP_LOADING' });
       this.uiService.showSnackBar(error.message, null, 3000);
       // this.snackbar.open(error.message, null, {
       //   duration: 3000
