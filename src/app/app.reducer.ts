@@ -1,29 +1,25 @@
-// The reduces is just a fucntion.
-// Thes fucntion simply take the old state and the incoming action
-// and the we return a new modified state
+import * as fromUI from './shared/ui.reducer';
+import { ActionReducerMap, createFeatureSelector, createSelector } from '@ngrx/store';
 
-export interface State { // this is only the interface for initialState
-  isLoading: boolean;
+
+// application white state
+export interface State {
+  ui: fromUI.State;    // this is the UI part only, the UI Reducer. The ui will locks like State interface of ui.reducer.ts
 }
 
-const initialState: State = {
-  isLoading: false
-};
-
-// I set state - initial state for the first time execution
-export function appReducer(state = initialState, action) {
-  switch (action.type) {
-    case 'START_LOADIGN' :
-      return {
-        isLoading: true
-      };
-
-    case 'STOP_LOADING':
-      return {
-        isLoading: false
-      };
-
-    default:
-      return state;
-  }
+// Here we group all reducers (Just an object with all the reducers)
+// ActionReducerMap is generic type and we put type State (Application white State)
+// So we have a reducer for slice of aplication white state (Fallow this patter)
+export const reducers: ActionReducerMap<State> = {
+  ui: fromUI.uiReducer
 }
+
+// utility fucntion (createFeatureSelector is generic function)
+// we target as a string the UI slice of our Store
+// Give us quick acess
+export const getUIState = createFeatureSelector<fromUI.State>('ui');
+
+// quick acess to isLoading
+// the first argument is the return of createFeatureSelector the ui state
+// the second is what to do with the state, in this case we just return the loading proprety via getIsLoading
+export const getIsLoading = createSelector(getUIState, fromUI.getIsLoading);

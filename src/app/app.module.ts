@@ -21,7 +21,7 @@ import { UIService } from './shared/ui.service';
 import { AuthModule } from './auth/auth.module';
 import { AngularFirestoreModule } from '@angular/fire/firestore';
 import { StoreModule } from '@ngrx/store';
-import { appReducer } from './app.reducer';
+import { reducers } from './app.reducer';
 
 
 @NgModule({
@@ -44,7 +44,7 @@ import { appReducer } from './app.reducer';
     AngularFireAuthModule, // imports firebase/auth, only needed for auth features,
     // AngularFireStorageModule, // imports firebase/storage only needed for storage features
     AuthModule,
-    StoreModule.forRoot({ui: appReducer}) // the store module has a function where I have to pass my the app reducer,
+    StoreModule.forRoot(reducers) // the store module has a function where I have to pass my the app reducer,
   ],
   providers: [AuthService, TrainingService, UIService],
   bootstrap: [AppComponent],
