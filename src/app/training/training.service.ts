@@ -1,32 +1,30 @@
 import { Subject, Subscription } from 'rxjs';
 
 import { Exercise } from './exercise.model';
-import { from } from 'rxjs';
 import { AngularFirestore } from '@angular/fire/firestore';
 import { Injectable } from '@angular/core';
-import { map } from 'rxjs/operators';
+import { map, take } from 'rxjs/operators';
 import { UIService } from '../shared/ui.service';
+import * as UI from '../shared/ui.actions';
+import * as fromTraining from './training.reducer';
+import * as Training from './training.actions';
+import { Store } from '@ngrx/store';
 
 
 @Injectable()
 export class TrainingService {
-
-  exerciseChanged = new Subject<Exercise>();
-  exercisesChanged = new Subject<Exercise[]>();
-  finishedExercisesChanged = new Subject<Exercise[]>();
-
-  private avaliableExercises: Exercise[] = [];
-  private runningExercise: Exercise;
-  private exercises: Exercise[] = [];
-  private finishedExercises: Exercise[] = []; // when this change I emmit the finishedExercisesChanged event
   private fbSubs: Subscription[] = [];
 
 
-  constructor( private db: AngularFirestore, private uiService: UIService ) {}
+  constructor(
+    private db: AngularFirestore,
+    private uiService: UIService,
+    private store: Store<fromTraining.State>
+    ) {}
 
   fetchAvaliableExercises() {
-    this.uiService.loadingStateChanged.next(true);
-    console.log(this.fbSubs)
+    // this.uiService.loadingStateChanged.next(true);
+    this.store.dispatch(new UI.StartLoading());
     this.fbSubs.push(this.db.collection('avaliableExercise')
     .snapshotChanges()
     .pipe(map(docArray => {
@@ -41,56 +39,49 @@ export class TrainingService {
         };
       });
     })).subscribe((exercises: Exercise[]) => {
-      this.uiService.loadingStateChanged.next(false);
-      this.avaliableExercises = exercises;
-      this.exercisesChanged.next([...this.avaliableExercises]);
+
+      this.store.dispatch(new UI.StopLoading());
+      this.store.dispatch(new Training.SetAvaliableTrainings(exercises)); // this need a payload
     }, error => {
-      this.uiService.loadingStateChanged.next(false);
+
+      this.store.dispatch(new UI.StopLoading());
       this.uiService.showSnackBar('Getching Exercises failed, please try again later', null, 3000);
-      this.exercisesChanged.next(null); // emit null for the drop down be rendered
     }));
   }
 
   startExercise(selectedId: string) {
-    console.log(selectedId);
-    this.runningExercise = this.avaliableExercises.find(ex => ex.id === selectedId);
-    this.exerciseChanged.next({ ... this.runningExercise });
-    console.log(this.runningExercise);
-  }
-
-  getRunningExercise() {
-    return { ...this.runningExercise };
+    this.store.dispatch(new Training.StartTraining(selectedId));
   }
 
   completeExercise() {
-    this.addDataToDatabase({
-      ...this.runningExercise,
-      date: new Date(),
-      state: 'completed'
+    this.store.select(fromTraining.getActiveTrainings).pipe(take(1)).subscribe(exercise => {
+      this.addDataToDatabase({
+        ...exercise,
+        date: new Date(),
+        state: 'completed'
+      });
+      this.store.dispatch(new Training.StopTraining());
     });
-
-    this.runningExercise = null;
-    this.exerciseChanged.next(null);
   }
 
   cancelExercise(progress: number) {
-    this.addDataToDatabase({
-      ...this.runningExercise,
-      duration: this.runningExercise.duration * (progress / 100),
-      calories: this.runningExercise.calories * (progress / 100),
-      date: new Date(),
-      state: 'cancelled'
+    this.store.select(fromTraining.getActiveTrainings).pipe(take(1)).subscribe(exercise => {
+      this.addDataToDatabase({
+        ...exercise,
+        duration: exercise.duration * (progress / 100),
+        calories: exercise.calories * (progress / 100),
+        date: new Date(),
+        state: 'cancelled'
+      });
+      this.store.dispatch(new Training.StopTraining());
     });
-
-    this.runningExercise = null;
-    this.exerciseChanged.next(null);
   }
 
   fetchCompletedOrCancelledExercises() {
     // this valueChanges only give us a array of document values without the ID of the document.
     // but we dont need the ID here
     this.fbSubs.push(this.db.collection('finishedExercises').valueChanges().subscribe((exercises: Exercise[]) => {
-      this.finishedExercisesChanged.next(exercises);
+      this.store.dispatch(new Training.SetFinishedTrainings(exercises)); // this need a payload
     }));
   }
 
